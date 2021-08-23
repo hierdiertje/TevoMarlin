@@ -57,10 +57,6 @@
   #include "../../feature/cooler.h"
 #endif
 
-#if ENABLED(I2C_AMMETER)
-  #include "../../feature/ammeter.h"
-#endif
-
 #if HAS_POWER_MONITOR
   #include "../../feature/power_monitor.h"
 #endif
@@ -240,12 +236,18 @@ FORCE_INLINE void _draw_centered_temp(const celsius_t temp, const uint8_t tx, co
       #define HOTEND_DOT    false
     #endif
 
-    #if ENABLED(STATUS_HOTEND_NUMBERLESS)
-      #define OFF_BMP(N) TERN(STATUS_HOTEND_INVERTED, status_hotend_b_bmp, status_hotend_a_bmp)
-      #define ON_BMP(N)  TERN(STATUS_HOTEND_INVERTED, status_hotend_a_bmp, status_hotend_b_bmp)
+    #if ANIM_HOTEND && BOTH(STATUS_HOTEND_INVERTED, STATUS_HOTEND_NUMBERLESS)
+      #define OFF_BMP(N) status_hotend_b_bmp
+      #define ON_BMP(N)  status_hotend_a_bmp
+    #elif ANIM_HOTEND && DISABLED(STATUS_HOTEND_INVERTED) && ENABLED(STATUS_HOTEND_NUMBERLESS)
+      #define OFF_BMP(N) status_hotend_a_bmp
+      #define ON_BMP(N)  status_hotend_b_bmp
+    #elif BOTH(ANIM_HOTEND, STATUS_HOTEND_INVERTED)
+      #define OFF_BMP(N) status_hotend##N##_b_bmp
+      #define ON_BMP(N)  status_hotend##N##_a_bmp
     #else
-      #define OFF_BMP(N) TERN(STATUS_HOTEND_INVERTED, status_hotend##N##_b_bmp, status_hotend##N##_a_bmp)
-      #define ON_BMP(N)  TERN(STATUS_HOTEND_INVERTED, status_hotend##N##_a_bmp, status_hotend##N##_b_bmp)
+      #define OFF_BMP(N) status_hotend##N##_a_bmp
+      #define ON_BMP(N)  status_hotend##N##_b_bmp
     #endif
 
     #if STATUS_HOTEND_BITMAPS > 1
@@ -264,17 +266,16 @@ FORCE_INLINE void _draw_centered_temp(const celsius_t temp, const uint8_t tx, co
       #define HOTEND_BITMAP(N,S) status_hotend_a_bmp
     #endif
 
-    #if DISABLED(STATUS_COMBINE_HEATERS)
+    if (PAGE_CONTAINS(STATUS_HEATERS_Y, STATUS_HEATERS_BOT)) {
 
-      if (PAGE_CONTAINS(STATUS_HEATERS_Y, STATUS_HEATERS_BOT)) {
+      #define BAR_TALL (STATUS_HEATERS_HEIGHT - 2)
 
-        #define BAR_TALL (STATUS_HEATERS_HEIGHT - 2)
+      const float prop = target - 20,
+                  perc = prop > 0 && temp >= 20 ? (temp - 20) / prop : 0;
+      uint8_t tall = uint8_t(perc * BAR_TALL + 0.5f);
+      NOMORE(tall, BAR_TALL);
 
-        const float prop = target - 20,
-                    perc = prop > 0 && temp >= 20 ? (temp - 20) / prop : 0;
-        uint8_t tall = uint8_t(perc * BAR_TALL + 0.5f);
-        NOMORE(tall, BAR_TALL);
-
+      #if ANIM_HOTEND
         // Draw hotend bitmap, either whole or split by the heating percent
         const uint8_t hx = STATUS_HOTEND_X(heater_id),
                       bw = STATUS_HOTEND_BYTEWIDTH(heater_id);
@@ -287,10 +288,9 @@ FORCE_INLINE void _draw_centered_temp(const celsius_t temp, const uint8_t tx, co
           else
         #endif
             u8g.drawBitmapP(hx, STATUS_HEATERS_Y, bw, STATUS_HEATERS_HEIGHT, HOTEND_BITMAP(TERN(HAS_MMU, active_extruder, heater_id), isHeat));
+      #endif
 
-      } // PAGE_CONTAINS
-
-    #endif // !STATUS_COMBINE_HEATERS
+    } // PAGE_CONTAINS
 
     if (PAGE_UNDER(7)) {
       #if HEATER_IDLE_HANDLER

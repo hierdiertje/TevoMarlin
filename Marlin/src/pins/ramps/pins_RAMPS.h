@@ -116,41 +116,77 @@
 //
 // Steppers
 //
-#define X_STEP_PIN                            54
-#define X_DIR_PIN                             55
-#define X_ENABLE_PIN                          38
-#ifndef X_CS_PIN
-  #define X_CS_PIN                   EXP2_07_PIN
+#if ENABLED(X_AXIS_USE_E1)
+  #define X_STEP_PIN         36
+  #define X_DIR_PIN          34
+  #define X_ENABLE_PIN       30
+  #ifndef X_CS_PIN
+    #define X_CS_PIN         44
+  #endif
+#else
+  #define X_STEP_PIN         54
+  #define X_DIR_PIN          55
+  #define X_ENABLE_PIN       38
+  #ifndef X_CS_PIN
+    #define X_CS_PIN         53
+  #endif
 #endif
 
-#define Y_STEP_PIN                            60
-#define Y_DIR_PIN                             61
-#define Y_ENABLE_PIN                          56
-#ifndef Y_CS_PIN
-  #define Y_CS_PIN                   EXP2_04_PIN
+#if ENABLED(Y_AXIS_USE_E1)
+  #define Y_STEP_PIN         36
+  #define Y_DIR_PIN          34
+  #define Y_ENABLE_PIN       30
+  #ifndef Y_CS_PIN
+    #define Y_CS_PIN         44
+  #endif
+#else
+  #define Y_STEP_PIN         60
+  #define Y_DIR_PIN          61
+  #define Y_ENABLE_PIN       56
+  #ifndef Y_CS_PIN
+    #define Y_CS_PIN         49
+  #endif
 #endif
 
-#ifndef Z_STEP_PIN
-  #define Z_STEP_PIN                          46
-#endif
-#define Z_DIR_PIN                             48
-#define Z_ENABLE_PIN                          62
-#ifndef Z_CS_PIN
-  #define Z_CS_PIN                            40
+#if ENABLED(Z_AXIS_USE_E1)
+  #define Z_STEP_PIN         36
+  #define Z_DIR_PIN          34
+  #define Z_ENABLE_PIN       30
+  #ifndef Z_CS_PIN
+    #define Z_CS_PIN         44
+  #endif
+#else
+  #define Z_STEP_PIN         46
+  #define Z_DIR_PIN          48
+  #define Z_ENABLE_PIN       62
+  #ifndef Z_CS_PIN
+    #define Z_CS_PIN         40
+  #endif
 #endif
 
-#define E0_STEP_PIN                           26
-#define E0_DIR_PIN                            28
-#define E0_ENABLE_PIN                         24
-#ifndef E0_CS_PIN
-  #define E0_CS_PIN                           42
+#if ENABLED(EXTRUDER_USE_E1)
+  #define E0_STEP_PIN        36
+  #define E0_DIR_PIN         34
+  #define E0_ENABLE_PIN      30
+  #ifndef E0_CS_PIN
+    #define E0_CS_PIN        44
+  #endif
+#else
+  #define E0_STEP_PIN        26
+  #define E0_DIR_PIN         28
+  #define E0_ENABLE_PIN      24
+  #ifndef E0_CS_PIN
+    #define E0_CS_PIN        42
+  #endif
 #endif
 
-#define E1_STEP_PIN                           36
-#define E1_DIR_PIN                            34
-#define E1_ENABLE_PIN                         30
-#ifndef E1_CS_PIN
-  #define E1_CS_PIN                           44
+#if DISABLED(X_AXIS_USE_E1) && DISABLED(Y_AXIS_USE_E1) && DISABLED(Z_AXIS_USE_E1) && DISABLED(EXTRUDER_USE_E1)
+  #define E1_STEP_PIN        36
+  #define E1_DIR_PIN         34
+  #define E1_ENABLE_PIN      30
+  #ifndef E1_CS_PIN
+    #define E1_CS_PIN        44
+  #endif
 #endif
 
 //
@@ -167,10 +203,10 @@
 #endif
 
 //
-// SPI for MAX Thermocouple
+// SPI for Max6675 or Max31855 Thermocouple
 //
-#ifndef TEMP_0_CS_PIN
-  #define TEMP_0_CS_PIN                       66  // Don't use 53 if using Display/SD card (SDSS) or 49 (SD_DETECT_PIN)
+#ifndef MAX6675_SS_PIN
+  #define MAX6675_SS_PIN                      66  // Don't use 53 if using Display/SD card (SDSS) or 49 (SD_DETECT_PIN)
 #endif
 
 //
@@ -206,23 +242,34 @@
   #define RAMPS_D10_PIN                       10
 #endif
 
-#define HEATER_0_PIN               RAMPS_D10_PIN
+#if ENABLED(HOTEND_USE_E1)
+  #define HEATER_0_PIN                MOSFET_D_PIN
+#else
+  #define HEATER_0_PIN               RAMPS_D10_PIN
+#endif
 
 #if ENABLED(IS_RAMPS_EFB)                         // Hotend, Fan, Bed
   #define HEATER_BED_PIN            RAMPS_D8_PIN
 #elif ENABLED(IS_RAMPS_EEF)                       // Hotend, Hotend, Fan
   #define HEATER_1_PIN              RAMPS_D9_PIN
+  #define FAN_PIN                   RAMPS_D8_PIN
 #elif ENABLED(IS_RAMPS_EEB)                       // Hotend, Hotend, Bed
   #define HEATER_1_PIN              RAMPS_D9_PIN
   #define HEATER_BED_PIN            RAMPS_D8_PIN
 #elif ENABLED(IS_RAMPS_EFF)                       // Hotend, Fan, Fan
+  #define FAN_PIN                   RAMPS_D9_PIN
   #define FAN1_PIN                  RAMPS_D8_PIN
-#elif DISABLED(IS_RAMPS_SF)                       // Not Spindle, Fan (i.e., "EFBF" or "EFBE")
+#elif ENABLED(IS_RAMPS_SF)                        // Spindle, Fan
+  #define FAN_PIN                   RAMPS_D8_PIN
+#else                                             // Non-specific are "EFB" (i.e., "EFBF" or "EFBE")
+  #define FAN_PIN                   RAMPS_D9_PIN
   #define HEATER_BED_PIN            RAMPS_D8_PIN
-  #if HOTENDS == 1 && DISABLED(HEATERS_PARALLEL)
-    #define FAN1_PIN                MOSFET_D_PIN
-  #else
-    #define HEATER_1_PIN            MOSFET_D_PIN
+  #if DISABLED(HOTEND_USE_E1)
+    #if HOTENDS == 1
+      #define FAN1_PIN              MOSFET_D_PIN
+    #else
+      #define HEATER_1_PIN          MOSFET_D_PIN
+    #endif
   #endif
 #endif
 
@@ -655,9 +702,7 @@
 
       #define BEEPER_PIN             EXP1_10_PIN
       #define BTN_ENC                EXP1_09_PIN
-      #ifndef SD_DETECT_PIN
-        #define SD_DETECT_PIN        EXP2_04_PIN
-      #endif
+      #define SD_DETECT_PIN          EXP2_04_PIN
 
       #ifndef KILL_PIN
         #define KILL_PIN             EXP2_03_PIN

@@ -31,11 +31,6 @@
   #define MKS_MINI_12864
 #endif
 
-// MKS_MINI_12864_V3 is simply identical to FYSETC_MINI_12864_2_1
-#if ENABLED(MKS_MINI_12864_V3)
-  #define FYSETC_MINI_12864_2_1
-#endif
-
 /**
  * General Flags that may be set below by specific LCDs
  *
@@ -141,13 +136,6 @@
   #define IS_RRD_SC 1
   #define IS_U8GLIB_SSD1306
 
-#elif ENABLED(SAV_3DGLCD)
-
-  #ifdef U8GLIB_SSD1306
-    #define IS_U8GLIB_SSD1306
-  #endif
-  #define IS_NEWPANEL 1
-
 #elif ENABLED(FYSETC_242_OLED_12864)
 
   #define IS_RRD_SC 1
@@ -220,7 +208,7 @@
     #define LCD_PROGRESS_BAR
   #endif
   #if ENABLED(TFTGLCD_PANEL_I2C)
-    #define LCD_I2C_ADDRESS           0x33  // Must be 0x33 for STM32 main boards and equal to panel's I2C slave addres
+    #define LCD_I2C_ADDRESS           0x27  // Must be equal to panel's I2C slave addres
   #endif
   #define LCD_USE_I2C_BUZZER                // Enable buzzer on LCD, used for both I2C and SPI buses (LiquidTWI2 not required)
   #define STD_ENCODER_PULSES_PER_STEP 2
@@ -570,12 +558,7 @@
   #undef DISABLE_E
 #endif
 
-#if ENABLED(E_DUAL_STEPPER_DRIVERS) // E0/E1 steppers act in tandem as E0
-
-  #define E_STEPPERS      2
-
-#elif ENABLED(SWITCHING_EXTRUDER)   // One stepper for every two EXTRUDERS
-
+#if ENABLED(SWITCHING_EXTRUDER)   // One stepper for every two EXTRUDERS
   #if EXTRUDERS > 4
     #define E_STEPPERS    3
   #elif EXTRUDERS > 2
@@ -586,24 +569,17 @@
   #if DISABLED(SWITCHING_NOZZLE)
     #define HOTENDS       E_STEPPERS
   #endif
-
-#elif ENABLED(MIXING_EXTRUDER)      // Multiple feeds are mixed proportionally
-
+#elif ENABLED(MIXING_EXTRUDER)
   #define E_STEPPERS      MIXING_STEPPERS
   #define E_MANUAL        1
   #if MIXING_STEPPERS == 2
     #define HAS_DUAL_MIXING 1
   #endif
-
-#elif ENABLED(SWITCHING_TOOLHEAD)   // Toolchanger
-
+#elif ENABLED(SWITCHING_TOOLHEAD)
   #define E_STEPPERS      EXTRUDERS
   #define E_MANUAL        EXTRUDERS
-
-#elif HAS_PRUSA_MMU2                // Průša Multi-Material Unit v2
-
+#elif HAS_PRUSA_MMU2
   #define E_STEPPERS 1
-
 #endif
 
 // No inactive extruders with SWITCHING_NOZZLE or Průša MMU1
@@ -742,17 +718,22 @@
     #define Z_PROBE_SERVO_NR 0
   #endif
   #ifdef DEACTIVATE_SERVOS_AFTER_MOVE
-    #error "BLTOUCH requires DEACTIVATE_SERVOS_AFTER_MOVE to be to disabled. Please update your Configuration.h file."
+    #warning "BLTOUCH requires DEACTIVATE_SERVOS_AFTER_MOVE to be to disabled. Undefining DEACTIVATE_SERVOS_AFTER_MOVE. Please update your Configuration.h file."
+    #undef DEACTIVATE_SERVOS_AFTER_MOVE
   #endif
 
   // Always disable probe pin inverting for BLTouch
   #if Z_MIN_PROBE_ENDSTOP_INVERTING
-    #error "BLTOUCH requires Z_MIN_PROBE_ENDSTOP_INVERTING set to false. Please update your Configuration.h file."
+    #warning "BLTOUCH requires Z_MIN_PROBE_ENDSTOP_INVERTING set to false. Resetting Z_MIN_PROBE_ENDSTOP_INVERTING to false. Please update your Configuration.h file."
+    #undef Z_MIN_PROBE_ENDSTOP_INVERTING
+    #define Z_MIN_PROBE_ENDSTOP_INVERTING false
   #endif
 
   #if ENABLED(Z_MIN_PROBE_USES_Z_MIN_ENDSTOP_PIN)
     #if Z_MIN_ENDSTOP_INVERTING
-      #error "BLTOUCH requires Z_MIN_ENDSTOP_INVERTING set to false. Please update your Configuration.h file."
+      #warning "BLTOUCH requires Z_MIN_ENDSTOP_INVERTING set to false. Resetting Z_MIN_ENDSTOP_INVERTING to false. Please update your Configuration.h file."
+      #undef Z_MIN_ENDSTOP_INVERTING
+      #define Z_MIN_ENDSTOP_INVERTING false
     #endif
   #endif
 #endif
@@ -771,7 +752,7 @@
 #endif
 
 /**
- * Set a flag for any type of bed probe, including the paper-test
+ * Set flags for enabled probes
  */
 #if ANY(HAS_Z_SERVO_PROBE, FIX_MOUNTED_PROBE, NOZZLE_AS_PROBE, TOUCH_MI_PROBE, Z_PROBE_ALLEN_KEY, Z_PROBE_SLED, SOLENOID_PROBE, SENSORLESS_PROBING, RACK_AND_PINION_PROBE)
   #define HAS_BED_PROBE 1
@@ -911,9 +892,9 @@
     #define HAS_PROBE_XY_OFFSET 1
   #endif
   #if DISABLED(Z_MIN_PROBE_USES_Z_MIN_ENDSTOP_PIN) && !BOTH(DELTA, SENSORLESS_PROBING)
-    #define USES_Z_MIN_PROBE_PIN 1
+    #define HAS_CUSTOM_PROBE_PIN 1
   #endif
-  #if Z_HOME_TO_MIN && TERN1(USES_Z_MIN_PROBE_PIN, ENABLED(USE_PROBE_FOR_Z_HOMING))
+  #if Z_HOME_TO_MIN && (!HAS_CUSTOM_PROBE_PIN || ENABLED(USE_PROBE_FOR_Z_HOMING))
     #define HOMING_Z_WITH_PROBE 1
   #endif
   #ifndef Z_PROBE_LOW_POINT
@@ -1046,10 +1027,6 @@
   #endif
 #endif
 
-#if DISABLED(DELTA)
-  #undef DELTA_HOME_TO_SAFE_ZONE
-#endif
-
 // This flag indicates some kind of jerk storage is needed
 #if EITHER(CLASSIC_JERK, IS_KINEMATIC)
   #define HAS_CLASSIC_JERK 1
@@ -1060,7 +1037,7 @@
 #endif
 
 // E jerk exists with JD disabled (of course) but also when Linear Advance is disabled on Delta/SCARA
-#if HAS_EXTRUDERS && (ENABLED(CLASSIC_JERK) || (IS_KINEMATIC && DISABLED(LIN_ADVANCE)))
+#if ENABLED(CLASSIC_JERK) || (IS_KINEMATIC && DISABLED(LIN_ADVANCE))
   #define HAS_CLASSIC_E_JERK 1
 #endif
 
@@ -1090,11 +1067,7 @@
 #if ENABLED(DWIN_CREALITY_LCD)
   #define SERIAL_CATCHALL 0
   #ifndef LCD_SERIAL_PORT
-    #if MB(BTT_SKR_MINI_E3_V1_0, BTT_SKR_MINI_E3_V1_2, BTT_SKR_MINI_E3_V2_0, BTT_SKR_E3_TURBO)
-      #define LCD_SERIAL_PORT 1
-    #else
-      #define LCD_SERIAL_PORT 3 // Creality 4.x board
-    #endif
+    #define LCD_SERIAL_PORT 3 // Creality 4.x board
   #endif
 #endif
 
