@@ -22,7 +22,7 @@
 
 #include "../../../../inc/MarlinConfigPre.h"
 
-#if ENABLED(DGUS_LCD_UI_HIPRECY)
+#if ENABLED(DGUS_LCD_UI_HYPRECY)
 
 #include "../DGUSScreenHandler.h"
 
@@ -41,8 +41,6 @@
 #endif
 
 #if ENABLED(SDSUPPORT)
-
-  static ExtUI::FileList filelist;
 
   void DGUSScreenHandler::DGUSLCD_SD_FileSelected(DGUS_VP_Variable &var, void *val_ptr) {
     uint16_t touched_nr = (int16_t)swap16(*(uint16_t*)val_ptr) + top_file;
@@ -251,7 +249,7 @@ void DGUSScreenHandler::HandleManualMove(DGUS_VP_Variable &var, void *val_ptr) {
 
     switch (var.VP) {
       default: return;
-        #if HAS_HOTEND
+        #if HOTENDS >= 1
           case VP_E0_PID_P: newvalue = value; break;
           case VP_E0_PID_I: newvalue = scalePID_i(value); break;
           case VP_E0_PID_D: newvalue = scalePID_d(value); break;
@@ -331,18 +329,18 @@ void DGUSScreenHandler::HandleManualMove(DGUS_VP_Variable &var, void *val_ptr) {
     }
 
     if (filament_data.action == 0) { // Go back to utility screen
-      #if HAS_HOTEND
+      #if HOTENDS >= 1
         thermalManager.setTargetHotend(e_temp, ExtUI::extruder_t::E0);
-        #if HOTENDS >= 2
-          thermalManager.setTargetHotend(e_temp, ExtUI::extruder_t::E1);
-        #endif
+      #endif
+      #if HOTENDS >= 2
+        thermalManager.setTargetHotend(e_temp, ExtUI::extruder_t::E1);
       #endif
       GotoScreen(DGUSLCD_SCREEN_UTILITY);
     }
     else { // Go to the preheat screen to show the heating progress
       switch (var.VP) {
         default: return;
-          #if HAS_HOTEND
+          #if HOTENDS >= 1
             case VP_E0_FILAMENT_LOAD_UNLOAD:
               filament_data.extruder = ExtUI::extruder_t::E0;
               thermalManager.setTargetHotend(e_temp, filament_data.extruder);
@@ -417,4 +415,4 @@ bool DGUSScreenHandler::loop() {
   return IsScreenComplete();
 }
 
-#endif // DGUS_LCD_UI_HIPRECY
+#endif // DGUS_LCD_UI_HYPRECY

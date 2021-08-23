@@ -20,9 +20,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  *
  */
-#include "../platforms.h"
-
-#ifdef HAL_STM32
+#if defined(ARDUINO_ARCH_STM32) && !defined(STM32GENERIC)
 
 #include "../../inc/MarlinConfigPre.h"
 
@@ -151,4 +149,4 @@ extern "C" {
 #endif
 
 #endif // POSTMORTEM_DEBUGGING
-#endif // HAL_STM32
+#endif // ARDUINO_ARCH_STM32

@@ -416,19 +416,8 @@
   #error "MBL_Z_STEP is now MESH_EDIT_Z_STEP."
 #elif defined(CHDK)
   #error "CHDK is now CHDK_PIN."
-#elif ANY_PIN( \
-        MAX6675_SS, MAX6675_SS2, MAX6675_CS, MAX6675_CS2, \
-        MAX31855_SS, MAX31855_SS2, MAX31855_CS, MAX31855_CS2, \
-        MAX31865_SS, MAX31865_SS2, MAX31865_CS, MAX31865_CS2)
-  #warning "MAX*_SS_PIN, MAX*_SS2_PIN, MAX*_CS_PIN, and MAX*_CS2_PIN are deprecated and will be removed in a future version. Please use TEMP_0_CS_PIN/TEMP_1_CS_PIN instead."
-#elif ANY_PIN(MAX6675_SCK, MAX31855_SCK, MAX31865_SCK)
-  #warning "MAX*_SCK_PIN is deprecated and will be removed in a future version. Please use TEMP_0_SCK_PIN/TEMP_1_SCK_PIN instead."
-#elif ANY_PIN(MAX6675_MISO, MAX6675_DO, MAX31855_MISO, MAX31855_DO, MAX31865_MISO, MAX31865_DO)
-  #warning "MAX*_MISO_PIN and MAX*_DO_PIN are deprecated and will be removed in a future version. Please use TEMP_0_MISO_PIN/TEMP_1_MISO_PIN instead."
-#elif PIN_EXISTS(MAX31865_MOSI)
-  #warning "MAX31865_MOSI_PIN is deprecated and will be removed in a future version. Please use TEMP_0_MOSI_PIN/TEMP_1_MOSI_PIN instead."
-#elif ANY_PIN(THERMO_CS1_PIN, THERMO_CS2_PIN, THERMO_DO_PIN, THERMO_SCK_PIN)
-  #error "THERMO_*_PIN is now TEMP_n_CS_PIN, TEMP_n_SCK_PIN, TEMP_n_MOSI_PIN, TEMP_n_MISO_PIN."
+#elif defined(MAX6675_SS) || defined(MAX6675_SS2)
+  #error "MAX6675_SS / MAX6675_SS2 is now MAX6675_SS_PIN / MAX6675_SS2_PIN."
 #elif defined(MAX31865_SENSOR_OHMS)
   #error "MAX31865_SENSOR_OHMS is now MAX31865_SENSOR_OHMS_0."
 #elif defined(MAX31865_CALIBRATION_OHMS)
@@ -579,10 +568,6 @@
   #error "MKS_LCD12864 is now MKS_LCD12864A or MKS_LCD12864B."
 #elif defined(NEOPIXEL_BKGD_LED_INDEX)
   #error "NEOPIXEL_BKGD_LED_INDEX is now NEOPIXEL_BKGD_INDEX_FIRST."
-#elif defined(TEMP_SENSOR_1_AS_REDUNDANT)
-  #error "TEMP_SENSOR_1_AS_REDUNDANT is now TEMP_SENSOR_REDUNDANT, with associated TEMP_SENSOR_REDUNDANT_* config."
-#elif defined(MAX_REDUNDANT_TEMP_SENSOR_DIFF)
-  #error "MAX_REDUNDANT_TEMP_SENSOR_DIFF is now TEMP_SENSOR_REDUNDANT_MAX_DIFF"
 #endif
 
 constexpr float arm[] = AXIS_RELATIVE_MODES;
@@ -591,7 +576,6 @@ static_assert(COUNT(arm) == LOGICAL_AXES, "AXIS_RELATIVE_MODES must contain " _L
 /**
  * Probe temp compensation requirements
  */
-
 #if ENABLED(PROBE_TEMP_COMPENSATION)
   #if defined(PTC_PARK_POS_X) || defined(PTC_PARK_POS_Y) || defined(PTC_PARK_POS_Z)
     #error "PTC_PARK_POS_[XYZ] is now PTC_PARK_POS (array)."
@@ -601,32 +585,6 @@ static_assert(COUNT(arm) == LOGICAL_AXES, "AXIS_RELATIVE_MODES must contain " _L
     #error "PTC_PROBE_POS_[XY] is now PTC_PROBE_POS (array)."
   #elif !defined(PTC_PROBE_POS)
     #error "PROBE_TEMP_COMPENSATION requires PTC_PROBE_POS."
-  #endif
-
-  #ifdef PTC_SAMPLE_START
-    constexpr auto _ptc_sample_start = PTC_SAMPLE_START;
-    constexpr decltype(_ptc_sample_start) _test_ptc_sample_start = 12.3f;
-    static_assert(_test_ptc_sample_start != 12.3f, "PTC_SAMPLE_START must be a whole number.");
-  #endif
-  #ifdef PTC_SAMPLE_RES
-    constexpr auto _ptc_sample_res = PTC_SAMPLE_RES;
-    constexpr decltype(_ptc_sample_res) _test_ptc_sample_res = 12.3f;
-    static_assert(_test_ptc_sample_res != 12.3f, "PTC_SAMPLE_RES must be a whole number.");
-  #endif
-  #ifdef BTC_SAMPLE_START
-    constexpr auto _btc_sample_start = BTC_SAMPLE_START;
-    constexpr decltype(_btc_sample_start) _test_btc_sample_start = 12.3f;
-    static_assert(_test_btc_sample_start != 12.3f, "BTC_SAMPLE_START must be a whole number.");
-  #endif
-  #ifdef BTC_SAMPLE_RES
-    constexpr auto _btc_sample_res = BTC_SAMPLE_RES;
-    constexpr decltype(_btc_sample_res) _test_btc_sample_res = 12.3f;
-    static_assert(_test_btc_sample_res != 12.3f, "BTC_SAMPLE_RES must be a whole number.");
-  #endif
-  #ifdef BTC_PROBE_TEMP
-    constexpr auto _btc_probe_temp = BTC_PROBE_TEMP;
-    constexpr decltype(_btc_probe_temp) _test_btc_probe_temp = 12.3f;
-    static_assert(_test_btc_probe_temp != 12.3f, "BTC_PROBE_TEMP must be a whole number.");
   #endif
 #endif
 
@@ -1055,10 +1013,6 @@ static_assert(Y_MAX_LENGTH >= Y_BED_SIZE, "Movement bounds (Y_MIN_POS, Y_MAX_POS
     #error "EXTRUDERS must be 1 with HEATERS_PARALLEL."
   #endif
 
-  #if ENABLED(STATUS_HOTEND_INVERTED) && NONE(STATUS_HOTEND_NUMBERLESS, STATUS_HOTEND_ANIM)
-    #error "With multiple hotends STATUS_HOTEND_INVERTED requires STATUS_HOTEND_ANIM or STATUS_HOTEND_NUMBERLESS."
-  #endif
-
   #if ENABLED(TOOLCHANGE_FILAMENT_SWAP)
     #ifndef TOOLCHANGE_FS_LENGTH
       #error "TOOLCHANGE_FILAMENT_SWAP requires TOOLCHANGE_FS_LENGTH."
@@ -1178,21 +1132,6 @@ static_assert(Y_MAX_LENGTH >= Y_BED_SIZE, "Movement bounds (Y_MIN_POS, Y_MAX_POS
     #error "Please select either MIXING_EXTRUDER or SWITCHING_EXTRUDER, not both."
   #elif ENABLED(SINGLENOZZLE)
     #error "MIXING_EXTRUDER is incompatible with SINGLENOZZLE."
-  #elif ENABLED(DISABLE_INACTIVE_EXTRUDER)
-    #error "MIXING_EXTRUDER is incompatible with DISABLE_INACTIVE_EXTRUDER."
-  #endif
-#endif
-
-/**
- * Dual E Steppers requirements
- */
-#if ENABLED(E_DUAL_STEPPER_DRIVERS)
-  #if EXTRUDERS > 1
-    #error "E_DUAL_STEPPER_DRIVERS can only be used with EXTRUDERS set to 1."
-  #elif ENABLED(MIXING_EXTRUDER)
-    #error "E_DUAL_STEPPER_DRIVERS is incompatible with MIXING_EXTRUDER."
-  #elif ENABLED(SWITCHING_EXTRUDER)
-    #error "E_DUAL_STEPPER_DRIVERS is incompatible with SWITCHING_EXTRUDER."
   #endif
 #endif
 
@@ -1206,10 +1145,6 @@ static_assert(Y_MAX_LENGTH >= Y_BED_SIZE, "Movement bounds (Y_MIN_POS, Y_MAX_POS
   );
   #if ENABLED(S_CURVE_ACCELERATION) && DISABLED(EXPERIMENTAL_SCURVE)
     #error "LIN_ADVANCE and S_CURVE_ACCELERATION may not play well together! Enable EXPERIMENTAL_SCURVE to continue."
-  #elif ENABLED(DIRECT_STEPPING)
-    #error "DIRECT_STEPPING is incompatible with LIN_ADVANCE. Enable in external planner if possible."
-  #elif !HAS_JUNCTION_DEVIATION && defined(DEFAULT_EJERK)
-    static_assert(DEFAULT_EJERK >= 10, "It is strongly recommended to set DEFAULT_EJERK >= 10 when using LIN_ADVANCE.");
   #endif
 #endif
 
@@ -1271,28 +1206,23 @@ static_assert(Y_MAX_LENGTH >= Y_BED_SIZE, "Movement bounds (Y_MIN_POS, Y_MAX_POS
 #endif
 
 /**
- * Magnetic / Electromagnetic Switching Toolhead requirements
+ * (Electro)magnetic Switching Toolhead requirements
  */
 #if EITHER(MAGNETIC_SWITCHING_TOOLHEAD, ELECTROMAGNETIC_SWITCHING_TOOLHEAD)
   #ifndef SWITCHING_TOOLHEAD_Y_POS
-    #error "(ELECTRO)?MAGNETIC_SWITCHING_TOOLHEAD requires SWITCHING_TOOLHEAD_Y_POS"
+    #error "(ELECTRO)MAGNETIC_SWITCHING_TOOLHEAD requires SWITCHING_TOOLHEAD_Y_POS"
   #elif !defined(SWITCHING_TOOLHEAD_X_POS)
-    #error "(ELECTRO)?MAGNETIC_SWITCHING_TOOLHEAD requires SWITCHING_TOOLHEAD_X_POS"
-  #elif !defined(SWITCHING_TOOLHEAD_Y_CLEAR)
-    #error "(ELECTRO)?MAGNETIC_SWITCHING_TOOLHEAD requires SWITCHING_TOOLHEAD_Y_CLEAR."
-  #endif
-#endif
-
-/**
- * Electromagnetic Switching Toolhead requirements
- */
-#if ENABLED(ELECTROMAGNETIC_SWITCHING_TOOLHEAD)
-  #if ENABLED(EXT_SOLENOID)
-    #error "ELECTROMAGNETIC_SWITCHING_TOOLHEAD and EXT_SOLENOID are incompatible. (Pins are used twice.)"
-  #elif !PIN_EXISTS(SOL0)
-    #error "ELECTROMAGNETIC_SWITCHING_TOOLHEAD requires SOL0_PIN."
+    #error "(ELECTRO)MAGNETIC_SWITCHING_TOOLHEAD requires SWITCHING_TOOLHEAD_X_POS"
   #elif !defined(SWITCHING_TOOLHEAD_Z_HOP)
-    #error "ELECTROMAGNETIC_SWITCHING_TOOLHEAD requires SWITCHING_TOOLHEAD_Z_HOP."
+    #error "(ELECTRO)MAGNETIC_SWITCHING_TOOLHEAD requires SWITCHING_TOOLHEAD_Z_HOP."
+  #elif !defined(SWITCHING_TOOLHEAD_Y_CLEAR)
+    #error "(ELECTRO)MAGNETIC_SWITCHING_TOOLHEAD requires SWITCHING_TOOLHEAD_Y_CLEAR."
+  #elif ENABLED(ELECTROMAGNETIC_SWITCHING_TOOLHEAD)
+    #if ENABLED(EXT_SOLENOID)
+      #error "(ELECTRO)MAGNETIC_SWITCHING_TOOLHEAD and EXT_SOLENOID are incompatible. (Pins are used twice.)"
+    #elif !PIN_EXISTS(SOL0)
+      #error "(ELECTRO)MAGNETIC_SWITCHING_TOOLHEAD requires SOL0_PIN."
+    #endif
   #endif
 #endif
 
@@ -1379,12 +1309,6 @@ static_assert(Y_MAX_LENGTH >= Y_BED_SIZE, "Movement bounds (Y_MIN_POS, Y_MAX_POS
 #if LINEAR_AXES >= 4
   #if AXIS4_NAME != 'A' && AXIS4_NAME != 'B' && AXIS4_NAME != 'C' && AXIS4_NAME != 'U' && AXIS4_NAME != 'V' && AXIS4_NAME != 'W'
     #error "AXIS4_NAME can only be one of 'A', 'B', 'C', 'U', 'V', or 'W'."
-  #elif !defined(I_MIN_POS) || !defined(I_MAX_POS)
-    #error "I_MIN_POS and I_MAX_POS are required with LINEAR_AXES >= 4."
-  #elif !defined(I_HOME_DIR)
-    #error "I_HOME_DIR is required with LINEAR_AXES >= 4."
-  #elif HAS_I_ENABLE && !defined(I_ENABLE_ON)
-    #error "I_ENABLE_ON is required for your I driver with LINEAR_AXES >= 4."
   #endif
 #endif
 #if LINEAR_AXES >= 5
@@ -1392,12 +1316,6 @@ static_assert(Y_MAX_LENGTH >= Y_BED_SIZE, "Movement bounds (Y_MIN_POS, Y_MAX_POS
     #error "AXIS5_NAME must be different from AXIS4_NAME and AXIS6_NAME"
   #elif AXIS5_NAME != 'A' && AXIS5_NAME != 'B' && AXIS5_NAME != 'C' && AXIS5_NAME != 'U' && AXIS5_NAME != 'V' && AXIS5_NAME != 'W'
     #error "AXIS5_NAME can only be one of 'A', 'B', 'C', 'U', 'V', or 'W'."
-  #elif !defined(J_MIN_POS) || !defined(J_MAX_POS)
-    #error "J_MIN_POS and J_MAX_POS are required with LINEAR_AXES >= 5."
-  #elif !defined(J_HOME_DIR)
-    #error "J_HOME_DIR is required with LINEAR_AXES >= 5."
-  #elif HAS_J_ENABLE && !defined(J_ENABLE_ON)
-    #error "J_ENABLE_ON is required for your J driver with LINEAR_AXES >= 5."
   #endif
 #endif
 #if LINEAR_AXES >= 6
@@ -1405,12 +1323,6 @@ static_assert(Y_MAX_LENGTH >= Y_BED_SIZE, "Movement bounds (Y_MIN_POS, Y_MAX_POS
     #error "AXIS6_NAME must be different from AXIS5_NAME and AXIS4_NAME."
   #elif AXIS6_NAME != 'A' && AXIS6_NAME != 'B' && AXIS6_NAME != 'C' && AXIS6_NAME != 'U' && AXIS6_NAME != 'V' && AXIS6_NAME != 'W'
     #error "AXIS6_NAME can only be one of 'A', 'B', 'C', 'U', 'V', or 'W'."
-  #elif !defined(K_MIN_POS) || !defined(K_MAX_POS)
-    #error "K_MIN_POS and K_MAX_POS are required with LINEAR_AXES >= 6."
-  #elif !defined(K_HOME_DIR)
-    #error "K_HOME_DIR is required with LINEAR_AXES >= 6."
-  #elif HAS_K_ENABLE && !defined(K_ENABLE_ON)
-    #error "K_ENABLE_ON is required for your K driver with LINEAR_AXES >= 6."
   #endif
 #endif
 
@@ -1939,14 +1851,6 @@ static_assert(Y_MAX_LENGTH >= Y_BED_SIZE, "Movement bounds (Y_MIN_POS, Y_MAX_POS
   #endif
 #endif
 
-#ifdef REDUNDANT_PART_COOLING_FAN
-  #if FAN_COUNT < 2
-    #error "REDUNDANT_PART_COOLING_FAN requires a board with at least two PWM fans."
-  #else
-    static_assert(WITHIN(REDUNDANT_PART_COOLING_FAN, 1, FAN_COUNT - 1), "REDUNDANT_PART_COOLING_FAN must be between 1 and " STRINGIFY(DECREMENT(FAN_COUNT)) ".");
-  #endif
-#endif
-
 /**
  * Case Light requirements
  */
@@ -1983,105 +1887,13 @@ static_assert(Y_MAX_LENGTH >= Y_BED_SIZE, "Movement bounds (Y_MIN_POS, Y_MAX_POS
   #error "TEMP_SENSOR_CHAMBER 1000 requires CHAMBER_PULLUP_RESISTOR_OHMS, CHAMBER_RESISTANCE_25C_OHMS and CHAMBER_BETA in Configuration_adv.h."
 #elif TEMP_SENSOR_PROBE_IS_CUSTOM && !(defined(PROBE_PULLUP_RESISTOR_OHMS) && defined(PROBE_RESISTANCE_25C_OHMS) && defined(PROBE_BETA))
   #error "TEMP_SENSOR_PROBE 1000 requires PROBE_PULLUP_RESISTOR_OHMS, PROBE_RESISTANCE_25C_OHMS and PROBE_BETA in Configuration_adv.h."
-#elif TEMP_SENSOR_REDUNDANT_IS_CUSTOM && !(defined(REDUNDANT_PULLUP_RESISTOR_OHMS) && defined(REDUNDANT_RESISTANCE_25C_OHMS) && defined(REDUNDANT_BETA))
-  #error "TEMP_SENSOR_REDUNDANT 1000 requires REDUNDANT_PULLUP_RESISTOR_OHMS, REDUNDANT_RESISTANCE_25C_OHMS and REDUNDANT_BETA in Configuration_adv.h."
 #endif
 
 /**
- * Required MAX31865 settings
- */
-#if TEMP_SENSOR_0_IS_MAX31865 || (TEMP_SENSOR_REDUNDANT_IS_MAX31865 && TEMP_SENSOR_REDUNDANT_SOURCE == 0)
-  #if !defined(MAX31865_SENSOR_WIRES_0) || !WITHIN(MAX31865_SENSOR_WIRES_0, 2, 4)
-    #error "MAX31865_SENSOR_WIRES_0 must be defined as an integer between 2 and 4."
-  #elif !defined(MAX31865_SENSOR_OHMS_0) || !defined(MAX31865_CALIBRATION_OHMS_0)
-    #error "MAX31865_SENSOR_OHMS_0 and MAX31865_CALIBRATION_OHMS_0 must be set if TEMP_SENSOR_0/TEMP_SENSOR_REDUNDANT is MAX31865."
-  #endif
-#endif
-#if TEMP_SENSOR_1_IS_MAX31865 || (TEMP_SENSOR_REDUNDANT_IS_MAX31865 && TEMP_SENSOR_REDUNDANT_SOURCE == 1)
-  #if !defined(MAX31865_SENSOR_WIRES_1) || !WITHIN(MAX31865_SENSOR_WIRES_1, 2, 4)
-    #error "MAX31865_SENSOR_WIRES_1 must be defined as an integer between 2 and 4."
-  #elif !defined(MAX31865_SENSOR_OHMS_1) || !defined(MAX31865_CALIBRATION_OHMS_1)
-    #error "MAX31865_SENSOR_OHMS_1 and MAX31865_CALIBRATION_OHMS_1 must be set if TEMP_SENSOR_1/TEMP_SENSOR_REDUNDANT is MAX31865."
-  #endif
-#endif
-
-/**
- * Redundant temperature sensor config
- */
-#if HAS_TEMP_REDUNDANT
-  #if !defined(TEMP_SENSOR_REDUNDANT_SOURCE)
-    #error "TEMP_SENSOR_REDUNDANT requires TEMP_SENSOR_REDUNDANT_SOURCE."
-  #elif !defined(TEMP_SENSOR_REDUNDANT_TARGET)
-    #error "TEMP_SENSOR_REDUNDANT requires TEMP_SENSOR_REDUNDANT_TARGET."
-  #elif TEMP_SENSOR_REDUNDANT_SOURCE == TEMP_SENSOR_REDUNDANT_TARGET
-    #error "TEMP_SENSOR_REDUNDANT_SOURCE can't be the same as TEMP_SENSOR_REDUNDANT_TARGET."
-  #elif TEMP_SENSOR_REDUNDANT_SOURCE < -5 || TEMP_SENSOR_REDUNDANT_SOURCE > 7
-    #error "TEMP_SENSOR_REDUNDANT_SOURCE must be between -5 and 7."
-  #elif TEMP_SENSOR_REDUNDANT_TARGET < -5 || TEMP_SENSOR_REDUNDANT_TARGET > 7
-    #error "TEMP_SENSOR_REDUNDANT_TARGET must be between -5 and 7."
-  #elif TEMP_SENSOR_REDUNDANT_SOURCE == -3
-    #error "TEMP_SENSOR_REDUNDANT_SOURCE can't be -3 (not used)."
-  #elif TEMP_SENSOR_REDUNDANT_TARGET == -3
-    #error "TEMP_SENSOR_REDUNDANT_TARGET can't be -3 (not used)."
-  #elif HAS_MULTI_HOTEND && TEMP_SENSOR_REDUNDANT_SOURCE < HOTENDS
-    #error "TEMP_SENSOR_REDUNDANT_SOURCE must be after the last TEMP_SENSOR used with a hotend; you can't use a sensor in the middle of two hotends."
-  #endif
-
-  #if TEMP_SENSOR_REDUNDANT_SOURCE == 0 && HAS_HOTEND
-    #error "TEMP_SENSOR_REDUNDANT_SOURCE can not be 0 if a hotend is used. E0 always uses TEMP_SENSOR_0."
-  #elif TEMP_SENSOR_REDUNDANT_SOURCE == -5 && HAS_TEMP_COOLER
-    #error "TEMP_SENSOR_REDUNDANT_SOURCE can't be Cooler (-5): TEMP_SENSOR_COOLER has already defined the sensor."
-  #elif TEMP_SENSOR_REDUNDANT_SOURCE == -4 && HAS_TEMP_PROBE
-    #error "TEMP_SENSOR_REDUNDANT_SOURCE can't be Probe (-4): TEMP_SENSOR_PROBE has already defined the sensor."
-  #elif TEMP_SENSOR_REDUNDANT_SOURCE == -2 && HAS_TEMP_CHAMBER
-    #error "TEMP_SENSOR_REDUNDANT_SOURCE can't be Chamber (-2): TEMP_SENSOR_CHAMBER has already defined the sensor."
-  #elif TEMP_SENSOR_REDUNDANT_SOURCE == -1 && HAS_TEMP_BED
-    #error "TEMP_SENSOR_REDUNDANT_SOURCE can't be Bed (-1): TEMP_SENSOR_BED has already defined the sensor."
-  #endif
-
-  #if TEMP_SENSOR_REDUNDANT_TARGET == 0 && !PIN_EXISTS(TEMP_0)
-    #error "TEMP_SENSOR_REDUNDANT_TARGET can't be E0 (0): requires TEMP_0_PIN"
-  #elif TEMP_SENSOR_REDUNDANT_TARGET == 1 && !PIN_EXISTS(TEMP_1)
-    #error "TEMP_SENSOR_REDUNDANT_TARGET can't be E1 (1): requires TEMP_1_PIN"
-  #elif TEMP_SENSOR_REDUNDANT_TARGET == 2 && !PIN_EXISTS(TEMP_2)
-    #error "TEMP_SENSOR_REDUNDANT_TARGET can't be E2 (2): requires TEMP_2_PIN"
-  #elif TEMP_SENSOR_REDUNDANT_TARGET == 3 && !PIN_EXISTS(TEMP_3)
-    #error "TEMP_SENSOR_REDUNDANT_TARGET can't be E3 (3): requires TEMP_3_PIN"
-  #elif TEMP_SENSOR_REDUNDANT_TARGET == 4 && !PIN_EXISTS(TEMP_4)
-    #error "TEMP_SENSOR_REDUNDANT_TARGET can't be E4 (4): requires TEMP_4_PIN"
-  #elif TEMP_SENSOR_REDUNDANT_TARGET == 5 && !PIN_EXISTS(TEMP_5)
-    #error "TEMP_SENSOR_REDUNDANT_TARGET can't be E5 (5): requires TEMP_5_PIN"
-  #elif TEMP_SENSOR_REDUNDANT_TARGET == 6 && !PIN_EXISTS(TEMP_6)
-    #error "TEMP_SENSOR_REDUNDANT_TARGET can't be E6 (6): requires TEMP_6_PIN"
-  #elif TEMP_SENSOR_REDUNDANT_TARGET == 7 && !PIN_EXISTS(TEMP_7)
-    #error "TEMP_SENSOR_REDUNDANT_TARGET can't be E7 (7): requires TEMP_7_PIN"
-  #elif TEMP_SENSOR_REDUNDANT_TARGET == -1 && !PIN_EXISTS(TEMP_BED)
-    #error "TEMP_SENSOR_REDUNDANT_TARGET can't be Bed (-1): requires TEMP_BED_PIN"
-  #elif TEMP_SENSOR_REDUNDANT_TARGET == -2 && !PIN_EXISTS(TEMP_CHAMBER)
-    #error "TEMP_SENSOR_REDUNDANT_TARGET can't be Chamber (-2): requires TEMP_CHAMBER_PIN"
-  #elif TEMP_SENSOR_REDUNDANT_TARGET == -4 && !PIN_EXISTS(TEMP_PROBE)
-    #error "TEMP_SENSOR_REDUNDANT_TARGET can't be Probe (-4): requires TEMP_PROBE_PIN"
-  #elif TEMP_SENSOR_REDUNDANT_TARGET == -5 && !PIN_EXISTS(TEMP_COOLER)
-    #error "TEMP_SENSOR_REDUNDANT_TARGET can't be Cooler (-5): requires TEMP_COOLER_PIN"
-  #endif
-
-  #if TEMP_SENSOR_REDUNDANT_IS_MAX_TC && REDUNDANT_TEMP_MATCH(SOURCE, E0) && !PIN_EXISTS(TEMP_0_CS)
-    #error "TEMP_SENSOR_REDUNDANT MAX Thermocouple with TEMP_SENSOR_REDUNDANT_SOURCE E0 requires TEMP_0_CS_PIN."
-  #elif TEMP_SENSOR_REDUNDANT_IS_MAX_TC && REDUNDANT_TEMP_MATCH(SOURCE, E1) && !PIN_EXISTS(TEMP_1_CS)
-    #error "TEMP_SENSOR_REDUNDANT MAX Thermocouple with TEMP_SENSOR_REDUNDANT_SOURCE E1 requires TEMP_1_CS_PIN."
-  #endif
-#endif
-
-/**
- * Test Sensor & Heater pin combos.
  * Pins and Sensor IDs must be set for each heater
  */
-#if !ANY_PIN(TEMP_0, TEMP_0_CS)
-  #error "TEMP_0_PIN or TEMP_0_CS_PIN not defined for this board."
-#elif !HAS_HEATER_0 && EXTRUDERS
-  #error "HEATER_0_PIN not defined for this board."
-#elif TEMP_SENSOR_0_IS_MAX_TC && !PIN_EXISTS(TEMP_0_CS)
-  #error "TEMP_SENSOR_0 MAX thermocouple requires TEMP_0_CS_PIN."
+#if TEMP_SENSOR_0_IS_MAX6675 && !ANY_PIN(MAX6675_SS, MAX31855_CS, MAX31865_CS, MAX6675_CS)
+  #error "TEMP_SENSOR_0 requires a MAX6675_SS_PIN, MAX6675_CS_PIN, MAX31855_CS_PIN, or MAX31865_CS_PIN."
 #elif HAS_HOTEND && !HAS_TEMP_HOTEND && !TEMP_SENSOR_0_IS_DUMMY
   #error "TEMP_0_PIN (required for TEMP_SENSOR_0) not defined for this board."
 #elif EITHER(HAS_MULTI_HOTEND, HEATERS_PARALLEL) && !HAS_HEATER_1
@@ -2089,12 +1901,14 @@ static_assert(Y_MAX_LENGTH >= Y_BED_SIZE, "Movement bounds (Y_MIN_POS, Y_MAX_POS
 #endif
 
 #if HAS_MULTI_HOTEND
-  #if TEMP_SENSOR_1_IS_MAX_TC && !PIN_EXISTS(TEMP_1_CS)
-    #error "TEMP_SENSOR_1 MAX thermocouple requires TEMP_1_CS_PIN."
+  #if TEMP_SENSOR_1_IS_MAX6675 && !ANY_PIN(MAX6675_SS2, MAX31855_CS2, MAX31865_CS2, MAX6675_CS2)
+    #error "TEMP_SENSOR_1 requires a MAX6675_SS2_PIN, MAX6675_CS2_PIN, MAX31855_CS2_PIN, or MAX31865_CS2_PIN."
   #elif TEMP_SENSOR_1 == 0
     #error "TEMP_SENSOR_1 is required with 2 or more HOTENDS."
-  #elif !ANY_PIN(TEMP_1, TEMP_1_CS) && !TEMP_SENSOR_1_IS_DUMMY
-    #error "TEMP_1_PIN or TEMP_1_CS_PIN not defined for this board."
+  #elif !ANY_PIN(TEMP_1, MAX6675_SS2) && !TEMP_SENSOR_1_IS_DUMMY
+    #error "TEMP_1_PIN or MAX6675_SS2_PIN not defined for this board."
+  #elif ENABLED(TEMP_SENSOR_1_AS_REDUNDANT)
+    #error "HOTENDS must be 1 with TEMP_SENSOR_1_AS_REDUNDANT."
   #endif
   #if HOTENDS > 2
     #if TEMP_SENSOR_2 == 0
@@ -2192,7 +2006,7 @@ static_assert(Y_MAX_LENGTH >= Y_BED_SIZE, "Movement bounds (Y_MIN_POS, Y_MAX_POS
   #elif TEMP_SENSOR_7 != 0
     #error "TEMP_SENSOR_7 shouldn't be set with only 2 HOTENDS."
   #endif
-#elif TEMP_SENSOR_1 != 0
+#elif TEMP_SENSOR_1 != 0 && DISABLED(TEMP_SENSOR_1_AS_REDUNDANT)
   #error "TEMP_SENSOR_1 shouldn't be set with only 1 HOTEND."
 #elif TEMP_SENSOR_2 != 0
   #error "TEMP_SENSOR_2 shouldn't be set with only 1 HOTEND."
@@ -2206,31 +2020,14 @@ static_assert(Y_MAX_LENGTH >= Y_BED_SIZE, "Movement bounds (Y_MIN_POS, Y_MAX_POS
   #error "TEMP_SENSOR_6 shouldn't be set with only 1 HOTEND."
 #elif TEMP_SENSOR_7 != 0
   #error "TEMP_SENSOR_7 shouldn't be set with only 1 HOTEND."
-#endif // HAS_MULTI_HOTEND
+#endif
 
-/**
- * Pins must be set for temp sensors, with some other feature requirements.
- */
 #if TEMP_SENSOR_CHAMBER && !PIN_EXISTS(TEMP_CHAMBER)
   #error "TEMP_SENSOR_CHAMBER requires TEMP_CHAMBER_PIN."
 #endif
 
-#if TEMP_SENSOR_COOLER
-  #if !PIN_EXISTS(TEMP_COOLER)
-    #error "TEMP_SENSOR_COOLER requires TEMP_COOLER_PIN."
-  #elif DISABLED(LASER_FEATURE)
-    #error "TEMP_SENSOR_COOLER requires LASER_FEATURE."
-  #endif
-#endif
-
-#if TEMP_SENSOR_PROBE
-  #if !PIN_EXISTS(TEMP_PROBE)
-    #error "TEMP_SENSOR_PROBE requires TEMP_PROBE_PIN."
-  #elif !HAS_TEMP_ADC_PROBE
-    #error "TEMP_PROBE_PIN must be an ADC pin."
-  #elif DISABLED(FIX_MOUNTED_PROBE)
-    #error "TEMP_SENSOR_PROBE shouldn't be set without FIX_MOUNTED_PROBE."
-  #endif
+#if TEMP_SENSOR_COOLER && !(PIN_EXISTS(TEMP_COOLER) && ENABLED(LASER_FEATURE))
+  #error "TEMP_SENSOR_COOLER requires LASER_FEATURE and TEMP_COOLER_PIN."
 #endif
 
 #if ENABLED(LASER_COOLANT_FLOW_METER) && !(PIN_EXISTS(FLOWMETER) && ENABLED(LASER_FEATURE))
@@ -2258,6 +2055,45 @@ static_assert(Y_MAX_LENGTH >= Y_BED_SIZE, "Movement bounds (Y_MIN_POS, Y_MAX_POS
     #error "SERVO2_PIN must be defined for your Heated Chamber vent servo."
   #elif CHAMBER_VENT_SERVO_NR == 3 && !PIN_EXISTS(SERVO3)
     #error "SERVO3_PIN must be defined for your Heated Chamber vent servo."
+  #endif
+#endif
+
+#if TEMP_SENSOR_PROBE
+  #if !PIN_EXISTS(TEMP_PROBE)
+    #error "TEMP_SENSOR_PROBE requires TEMP_PROBE_PIN."
+  #elif !HAS_TEMP_ADC_PROBE
+    #error "TEMP_PROBE_PIN must be an ADC pin."
+  #elif DISABLED(FIX_MOUNTED_PROBE)
+    #error "TEMP_SENSOR_PROBE shouldn't be set without FIX_MOUNTED_PROBE."
+  #endif
+#endif
+
+#if ENABLED(TEMP_SENSOR_1_AS_REDUNDANT) && TEMP_SENSOR_1 == 0
+  #error "TEMP_SENSOR_1 is required with TEMP_SENSOR_1_AS_REDUNDANT."
+#endif
+
+#if TEMP_SENSOR_0_IS_MAX31865 && !(defined(MAX31865_SENSOR_OHMS_0) && defined(MAX31865_CALIBRATION_OHMS_0))
+  #error "MAX31865_SENSOR_OHMS_0 and MAX31865_CALIBRATION_OHMS_0 must be set if TEMP_SENSOR_0 is MAX31865."
+#elif TEMP_SENSOR_1_IS_MAX31865 && !(defined(MAX31865_SENSOR_OHMS_1) && defined(MAX31865_CALIBRATION_OHMS_1))
+  #error "MAX31865_SENSOR_OHMS_1 and MAX31865_CALIBRATION_OHMS_1 must be set if TEMP_SENSOR_1 is MAX31865."
+#endif
+
+/**
+ * Test Heater, Temp Sensor, and Extruder Pins
+ */
+#if !HAS_HEATER_0 && EXTRUDERS
+  #error "HEATER_0_PIN not defined for this board."
+#elif !ANY_PIN(TEMP_0, MAX6675_SS)
+  #error "TEMP_0_PIN or MAX6675_SS not defined for this board."
+#endif
+
+#if HAS_EXTRUDERS
+  #if ((defined(__AVR_ATmega644P__) || defined(__AVR_ATmega1284P__)) && !PINS_EXIST(E0_STEP, E0_DIR))
+    #error "E0_STEP_PIN or E0_DIR_PIN not defined for this board."
+  #elif ( !(defined(__AVR_ATmega644P__) || defined(__AVR_ATmega1284P__)) && (!PINS_EXIST(E0_STEP, E0_DIR) || !HAS_E0_ENABLE))
+    #error "E0_STEP_PIN, E0_DIR_PIN, or E0_ENABLE_PIN not defined for this board."
+  #elif EXTRUDERS && TEMP_SENSOR_0 == 0
+    #error "TEMP_SENSOR_0 is required if there are any extruders."
   #endif
 #endif
 
@@ -2302,16 +2138,6 @@ static_assert(Y_MAX_LENGTH >= Y_BED_SIZE, "Movement bounds (Y_MIN_POS, Y_MAX_POS
 /**
  * Test Extruder Stepper Pins
  */
-#if HAS_EXTRUDERS
-  #if ((defined(__AVR_ATmega644P__) || defined(__AVR_ATmega1284P__)) && !PINS_EXIST(E0_STEP, E0_DIR))
-    #error "E0_STEP_PIN or E0_DIR_PIN not defined for this board."
-  #elif ( !(defined(__AVR_ATmega644P__) || defined(__AVR_ATmega1284P__)) && (!PINS_EXIST(E0_STEP, E0_DIR) || !HAS_E0_ENABLE))
-    #error "E0_STEP_PIN, E0_DIR_PIN, or E0_ENABLE_PIN not defined for this board."
-  #elif EXTRUDERS && TEMP_SENSOR_0 == 0
-    #error "TEMP_SENSOR_0 is required if there are any extruders."
-  #endif
-#endif
-
 #if E_STEPPERS
   #if !(PINS_EXIST(E0_STEP, E0_DIR) && HAS_E0_ENABLE)
     #error "E0_STEP_PIN, E0_DIR_PIN, or E0_ENABLE_PIN not defined for this board."
@@ -3599,6 +3425,13 @@ static_assert(   _ARR_TEST(3,0) && _ARR_TEST(3,1) && _ARR_TEST(3,2)
 #endif
 
 /**
+ * Stepper Chunk support
+ */
+#if BOTH(DIRECT_STEPPING, LIN_ADVANCE)
+  #error "DIRECT_STEPPING is incompatible with LIN_ADVANCE. Enable in external planner if possible."
+#endif
+
+/**
  * Touch Screen Calibration
  */
 #if ENABLED(TFT_TOUCH_DEVICE_XPT2046) && DISABLED(TOUCH_SCREEN_CALIBRATION) \
@@ -3629,13 +3462,6 @@ static_assert(   _ARR_TEST(3,0) && _ARR_TEST(3,1) && _ARR_TEST(3,2)
  */
 #if BOTH(HAS_MEATPACK, BINARY_FILE_TRANSFER)
   #error "Either enable MEATPACK_ON_SERIAL_PORT_* or BINARY_FILE_TRANSFER, not both."
-#endif
-
-/**
- * Sanity Check for Slim LCD Menus and Probe Offset Wizard
- */
-#if BOTH(SLIM_LCD_MENUS, PROBE_OFFSET_WIZARD)
-  #error "SLIM_LCD_MENUS disables \"Advanced Settings > Probe Offsets > PROBE_OFFSET_WIZARD.\""
 #endif
 
 /**
